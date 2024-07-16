@@ -5,9 +5,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/spf13/viper"
-
 	"github.com/jsGolden/frete-rapido-api/config"
+	"github.com/jsGolden/frete-rapido-api/router"
 )
 
 func main() {
@@ -16,12 +15,11 @@ func main() {
 		log.Fatalf("Error while loading .env file: %s", err)
 	}
 
-	http.HandleFunc("/hello-world", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("Hello world!"))
-	})
+	router := router.SetupRouter()
+	serverConfig := config.ServerConfig()
 
-	port := viper.GetString("PORT")
-
-	fmt.Printf("Server listening at port :%s 🚀", port)
-	http.ListenAndServe(fmt.Sprintf(":%s", port), nil)
+	fmt.Printf("Server listening at: %s 🚀", serverConfig)
+	if err := http.ListenAndServe(serverConfig, router); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Erro ao iniciar o servidor: %v", err)
+	}
 }
