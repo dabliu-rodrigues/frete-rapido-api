@@ -28,6 +28,8 @@ func SendGenericError(w http.ResponseWriter, code int, msg string) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusBadRequest)
 	w.Write(jsonResponse)
 }
 
