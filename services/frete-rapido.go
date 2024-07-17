@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 type freteRapidoService struct {
@@ -43,12 +44,52 @@ type FreteRapidoQuoteSimulationRequest struct {
 }
 
 type FreteRapidoQuoteSimulationResponse struct {
-	Carrier []struct {
-		Name     string  `json:"name"`
-		Service  string  `json:"service"`
-		Deadline int     `json:"deadline"`
-		Price    float64 `json:"price"`
-	} `json:"carrier"`
+	Dispatchers []struct {
+		ID     string `json:"id"`
+		Offers []struct {
+			Carrier struct {
+				CompanyName      string `json:"company_name"`
+				Logo             string `json:"logo"`
+				Name             string `json:"name"`
+				Reference        int    `json:"reference"`
+				RegisteredNumber string `json:"registered_number"`
+				StateInscription string `json:"state_inscription"`
+			} `json:"carrier"`
+			CarrierOriginalDeliveryTime struct {
+				Days          int    `json:"days"`
+				EstimatedDate string `json:"estimated_date"`
+			} `json:"carrier_original_delivery_time"`
+			CostPrice    float64 `json:"cost_price"`
+			DeliveryTime struct {
+				Days          int    `json:"days"`
+				EstimatedDate string `json:"estimated_date"`
+			} `json:"delivery_time"`
+			Esg struct {
+				Co2EmissionEstimate float64 `json:"co2_emission_estimate"`
+			} `json:"esg"`
+			Expiration           time.Time `json:"expiration"`
+			FinalPrice           float64   `json:"final_price"`
+			HomeDelivery         bool      `json:"home_delivery"`
+			Modal                string    `json:"modal"`
+			Offer                int       `json:"offer"`
+			OriginalDeliveryTime struct {
+				Days          int    `json:"days"`
+				EstimatedDate string `json:"estimated_date"`
+			} `json:"original_delivery_time"`
+			Service        string `json:"service"`
+			SimulationType int    `json:"simulation_type"`
+			TableReference string `json:"table_reference"`
+			Weights        struct {
+				Cubed float64 `json:"cubed"`
+				Real  int     `json:"real"`
+				Used  float64 `json:"used"`
+			} `json:"weights"`
+		} `json:"offers"`
+		RegisteredNumberDispatcher string `json:"registered_number_dispatcher"`
+		RegisteredNumberShipper    string `json:"registered_number_shipper"`
+		RequestID                  string `json:"request_id"`
+		ZipcodeOrigin              int    `json:"zipcode_origin"`
+	} `json:"dispatchers"`
 }
 
 func NewFreteRapidoService(url string) *freteRapidoService {
@@ -60,7 +101,7 @@ func NewFreteRapidoService(url string) *freteRapidoService {
 	}
 }
 
-func (s *freteRapidoService) Quote(qr *FreteRapidoQuoteSimulationRequest) (map[string]interface{}, error) {
+func (s *freteRapidoService) Quote(qr *FreteRapidoQuoteSimulationRequest) (*FreteRapidoQuoteSimulationResponse, error) {
 	url := fmt.Sprintf("%s/quote/simulate", s.BaseURL)
 
 	jsonBody, err := json.Marshal(qr)
@@ -86,8 +127,8 @@ func (s *freteRapidoService) Quote(qr *FreteRapidoQuoteSimulationRequest) (map[s
 		return nil, err
 	}
 
-	keyVal := make(map[string]interface{})
-	json.Unmarshal(bodyResponse, &keyVal)
+	var jsonResponse = FreteRapidoQuoteSimulationResponse{}
+	json.Unmarshal(bodyResponse, &jsonResponse)
 
-	return keyVal, nil
+	return &jsonResponse, nil
 }

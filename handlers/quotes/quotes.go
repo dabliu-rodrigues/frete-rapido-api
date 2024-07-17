@@ -27,7 +27,7 @@ func CreateQuote(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(quoteRequest.Volumes) <= 0 {
-		utils.SendGenericError(w, http.StatusBadRequest, "At least one volume is necessary to quote!")
+		utils.SendGenericError(w, http.StatusBadRequest, "At least one volume is necessary to simulate quote!")
 		return
 	}
 
@@ -45,7 +45,24 @@ func CreateQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.SendResponse(w, resp)
+	var transformedOffers = models.CreateQuoteResponse{}
+
+	for _, offer := range resp.Dispatchers[0].Offers {
+		offerData := struct {
+			Name     string  `json:"name"`
+			Service  string  `json:"service"`
+			Deadline int     `json:"deadline"`
+			Price    float64 `json:"price"`
+		}{
+			Name:     offer.Carrier.Name,
+			Service:  offer.Service,
+			Price:    offer.FinalPrice,
+			Deadline: offer.DeliveryTime.Days,
+		}
+		transformedOffers.Carrier = append(transformedOffers.Carrier, offerData)
+	}
+
+	utils.SendResponse(w, transformedOffers)
 }
 
 func GetQuoteMetrics(w http.ResponseWriter, r *http.Request) {
