@@ -11,9 +11,9 @@ type ParamError struct {
 func validatorTagMapper(tag string) string {
 	switch tag {
 	case "gte":
-		return "O numero deve ser positivo"
+		return "The value needs to be a bigger number"
 	case "required":
-		return "Este campo é obrigatório"
+		return "Missing field"
 	}
 	return tag
 }
@@ -27,7 +27,7 @@ func Validator(s interface{}) []ParamError {
 		out := make([]ParamError, len(validationErrors))
 		for i, e := range validationErrors {
 			out[i] = ParamError{
-				e.Field(),
+				e.Namespace(),
 				validatorTagMapper(e.Tag()),
 				e.Type().Kind().String(),
 			}
