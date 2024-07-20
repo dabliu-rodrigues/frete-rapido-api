@@ -1,31 +1,28 @@
 package quotes
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/render"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/jsGolden/frete-rapido-api/models"
-	"github.com/jsGolden/frete-rapido-api/services"
+	"github.com/jsGolden/frete-rapido-api/repositories"
 	freterapido "github.com/jsGolden/frete-rapido-api/services/frete-rapido"
 	"github.com/jsGolden/frete-rapido-api/transformers"
 	"github.com/jsGolden/frete-rapido-api/utils"
 )
 
 type QuoteHandler struct {
-	Mongo       *services.MongoService
-	FreteRapido *freterapido.Service
+	QuoteRepository *repositories.QuoteRepository
+	FreteRapido     *freterapido.Service
 }
 
-func NewQuoteHandler(Mongo *services.MongoService, FreteRapido *freterapido.Service) *QuoteHandler {
+func NewQuoteHandler(qr *repositories.QuoteRepository, fr *freterapido.Service) *QuoteHandler {
 	return &QuoteHandler{
-		Mongo,
-		FreteRapido,
+		qr,
+		fr,
 	}
 }
 
@@ -60,37 +57,21 @@ func (q *QuoteHandler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	db, err := q.Mongo.GetConnection()
-	if err != nil {
-		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("%s", err))
-		return
-	}
+	var transformedOffers []*models.Quote
 
-	collection := db.Collection("quotes")
-
-	var transformedOffers = models.CreateQuoteResponse{}
-	documentsToInsert := make([]interface{}, len(resp.Dispatchers[0].Offers))
-
-	for i, offer := range resp.Dispatchers[0].Offers {
-		offerData := struct {
-			Name     string  `json:"name"`
-			Service  string  `json:"service"`
-			Deadline int     `json:"deadline"`
-			Price    float64 `json:"price"`
-		}{
+	for _, offer := range resp.Dispatchers[0].Offers {
+		offerData := &models.Quote{
 			Name:     offer.Carrier.Name,
 			Service:  offer.Service,
 			Price:    offer.FinalPrice,
 			Deadline: offer.DeliveryTime.Days,
 		}
-		transformedOffers.Carrier = append(transformedOffers.Carrier, offerData)
-		documentsToInsert[i] = offerData
+		transformedOffers = append(transformedOffers, offerData)
 	}
 
-	_, err = collection.InsertMany(context.TODO(), documentsToInsert)
-
+	_, err = q.QuoteRepository.InsertManyQuotes(transformedOffers)
 	if err != nil {
-		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert offer: %s", err))
+		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("%s", err))
 		return
 	}
 
@@ -98,54 +79,21 @@ func (q *QuoteHandler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 }
 
 func (q *QuoteHandler) GetQuoteMetrics(w http.ResponseWriter, r *http.Request) {
-	pipeline := mongo.Pipeline{
-		bson.D{
-			{"$sort", bson.D{{"price", -1}}},
-		},
-	}
+	var limit uint64
 
 	if r.URL.Query().Has("last_quotes") {
-		limit, err := strconv.ParseUint(r.URL.Query().Get("last_quotes"), 10, 64)
+		lq, err := strconv.ParseUint(r.URL.Query().Get("last_quotes"), 10, 64)
 		if err != nil {
 			utils.SendBadParamError(w, []utils.ParamError{
 				{Param: "last_quotes", Message: "last_quotes param need to be a positive integer", Type: "Query param"},
 			})
 			return
 		}
-		pipeline = append(pipeline, bson.D{{"$limit", limit}})
+		limit = lq
 	}
 
-	db, err := q.Mongo.GetConnection()
+	result, err := q.QuoteRepository.GetQuoteMetrics(limit)
 	if err != nil {
-		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("%s", err))
-		return
-	}
-
-	pipeline = append(pipeline, bson.D{{"$group", bson.D{
-		{"_id", "$name"},
-		{"count", bson.D{{"$sum", 1}}},
-		{"total_price", bson.D{{"$sum", "$price"}}},
-		{"average_price", bson.D{{"$avg", "$price"}}},
-	}}})
-
-	pipeline = append(pipeline, bson.D{{"$sort", bson.D{{"total_price", 1}}}})
-	pipeline = append(pipeline, bson.D{{"$group", bson.D{
-		{"_id", nil},
-		{"cheapest_quote", bson.D{{"$first", "$total_price"}}},
-		{"most_expensive_quote", bson.D{{"$last", "$total_price"}}},
-		{"services", bson.D{{"$push", "$$ROOT"}}},
-	}}})
-
-	collection := db.Collection("quotes")
-	cursor, err := collection.Aggregate(context.TODO(), pipeline)
-	if err != nil {
-		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("%s", err))
-		return
-	}
-	defer cursor.Close(context.TODO())
-
-	var result []bson.M
-	if err = cursor.All(context.TODO(), &result); err != nil {
 		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("%s", err))
 		return
 	}

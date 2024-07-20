@@ -19,10 +19,11 @@ type CreateQuoteRequest struct {
 }
 
 type CreateQuoteResponse struct {
-	Carrier []struct {
-		Name     string  `json:"name"`
-		Service  string  `json:"service"`
-		Deadline int     `json:"deadline"`
-		Price    float64 `json:"price"`
-	} `json:"carrier"`
+	Carrier []Quote
+}
+type Quote struct {
+	Name     string  `json:"name"`
+	Service  string  `json:"service"`
+	Deadline int     `json:"deadline"`
+	Price    float64 `json:"price"`
 }
