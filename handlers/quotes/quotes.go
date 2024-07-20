@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/render"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 
 	"github.com/jsGolden/frete-rapido-api/models"
 	"github.com/jsGolden/frete-rapido-api/services"
@@ -83,7 +85,7 @@ func (q *QuoteHandler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 
 		_, err := collection.InsertOne(context.TODO(), bson.M{
 			"name":     offer.Carrier.Name,
-			"nervice":  offer.Service,
+			"service":  offer.Service,
 			"price":    offer.FinalPrice,
 			"deadline": offer.DeliveryTime.Days,
 		})
@@ -97,6 +99,64 @@ func (q *QuoteHandler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 	utils.SendOKResponse(w, transformedOffers)
 }
 
-func GetQuoteMetrics(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Hello /metrics!"))
+func (q *QuoteHandler) GetQuoteMetrics(w http.ResponseWriter, r *http.Request) {
+	pipeline := mongo.Pipeline{
+		bson.D{
+			{"$sort", bson.D{{"price", -1}}},
+		},
+	}
+
+	if r.URL.Query().Has("last_quotes") {
+		limit, err := strconv.ParseUint(r.URL.Query().Get("last_quotes"), 10, 64)
+		if err != nil {
+			utils.SendBadParamError(w, []utils.ParamError{
+				{Param: "last_quotes", Message: "last_quotes param need to be a positive integer", Type: "Query param"},
+			})
+			return
+		}
+		pipeline = append(pipeline, bson.D{{"$limit", limit}})
+	}
+
+	db, err := q.Mongo.GetConnection()
+	if err != nil {
+		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("%s", err))
+		return
+	}
+
+	pipeline = append(pipeline, bson.D{{"$group", bson.D{
+		{"_id", "$service"},
+		{"count", bson.D{{"$sum", 1}}},
+		{"total_price", bson.D{{"$sum", "$price"}}},
+		{"average_price", bson.D{{"$avg", "$price"}}},
+	}}})
+
+	pipeline = append(pipeline, bson.D{{"$sort", bson.D{{"total_price", 1}}}})
+	pipeline = append(pipeline, bson.D{{"$group", bson.D{
+		{"_id", nil},
+		{"cheapest_quote", bson.D{{"$first", "$total_price"}}},
+		{"most_expensive_quote", bson.D{{"$last", "$total_price"}}},
+		{"services", bson.D{{"$push", "$$ROOT"}}},
+	}}})
+
+	collection := db.Collection("quotes")
+	cursor, err := collection.Aggregate(context.TODO(), pipeline)
+	if err != nil {
+		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("%s", err))
+		return
+	}
+	defer cursor.Close(context.TODO())
+
+	var result []bson.M
+	if err = cursor.All(context.TODO(), &result); err != nil {
+		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("%s", err))
+		return
+	}
+
+	metrics := map[string]interface{}{
+		"cheapest_quote":       result[0]["cheapest_quote"],
+		"most_expensive_quote": result[0]["most_expensive_quote"],
+		"services":             result[0]["services"],
+	}
+
+	utils.SendOKResponse(w, metrics)
 }

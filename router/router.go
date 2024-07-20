@@ -19,6 +19,6 @@ func SetupRouter(q *services.MongoService) *chi.Mux {
 	quoteHandler := quotes.NewQuoteHandler(q, freteRapidoService)
 
 	router.Post("/quote", quoteHandler.CreateQuote)
-	router.Get("/metrics", quotes.GetQuoteMetrics)
+	router.Get("/metrics", quoteHandler.GetQuoteMetrics)
 	return router
 }
