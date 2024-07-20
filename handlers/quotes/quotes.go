@@ -1,10 +1,12 @@
 package quotes
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
 	"github.com/go-chi/render"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"github.com/jsGolden/frete-rapido-api/models"
 	"github.com/jsGolden/frete-rapido-api/services"
@@ -45,6 +47,15 @@ func CreateQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	mongoService := services.NewMongoService("mongodb://127.0.0.1:27017", "frete-rapido")
+	db, err := mongoService.GetConnection()
+	if err != nil {
+		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("%s", err))
+		return
+	}
+
+	c := db.Collection("quotes")
+
 	var transformedOffers = models.CreateQuoteResponse{}
 
 	for _, offer := range resp.Dispatchers[0].Offers {
@@ -60,9 +71,21 @@ func CreateQuote(w http.ResponseWriter, r *http.Request) {
 			Deadline: offer.DeliveryTime.Days,
 		}
 		transformedOffers.Carrier = append(transformedOffers.Carrier, offerData)
+
+		_, err := c.InsertOne(context.TODO(), bson.M{
+			"name":     offer.Carrier.Name,
+			"nervice":  offer.Service,
+			"price":    offer.FinalPrice,
+			"deadline": offer.DeliveryTime.Days,
+		})
+
+		if err != nil {
+			utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert offer: %s", err))
+			return
+		}
 	}
 
-	utils.SendResponse(w, transformedOffers)
+	utils.SendOKResponse(w, transformedOffers)
 }
 
 func GetQuoteMetrics(w http.ResponseWriter, r *http.Request) {

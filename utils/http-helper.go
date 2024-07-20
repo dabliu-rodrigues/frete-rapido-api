@@ -22,7 +22,7 @@ func SendGenericError(w http.ResponseWriter, code int, msg string) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 
-	SendResponse(w, response)
+	SendResponse(w, code, response)
 }
 
 func SendBadParamError(w http.ResponseWriter, p []ParamError) {
@@ -30,10 +30,14 @@ func SendBadParamError(w http.ResponseWriter, p []ParamError) {
 		p,
 		http.StatusBadRequest,
 	}
-	SendResponse(w, response)
+	SendResponse(w, http.StatusBadRequest, response)
 }
 
-func SendResponse(w http.ResponseWriter, b interface{}) {
+func SendOKResponse(w http.ResponseWriter, b interface{}) {
+	SendResponse(w, http.StatusOK, b)
+}
+
+func SendResponse(w http.ResponseWriter, code int, b interface{}) {
 	jsonResponse, err := json.Marshal(b)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -41,6 +45,6 @@ func SendResponse(w http.ResponseWriter, b interface{}) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(code)
 	w.Write(jsonResponse)
 }
