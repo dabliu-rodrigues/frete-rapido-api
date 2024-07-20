@@ -68,8 +68,9 @@ func (q *QuoteHandler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 	collection := db.Collection("quotes")
 
 	var transformedOffers = models.CreateQuoteResponse{}
+	documentsToInsert := make([]interface{}, len(resp.Dispatchers[0].Offers))
 
-	for _, offer := range resp.Dispatchers[0].Offers {
+	for i, offer := range resp.Dispatchers[0].Offers {
 		offerData := struct {
 			Name     string  `json:"name"`
 			Service  string  `json:"service"`
@@ -82,18 +83,14 @@ func (q *QuoteHandler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 			Deadline: offer.DeliveryTime.Days,
 		}
 		transformedOffers.Carrier = append(transformedOffers.Carrier, offerData)
+		documentsToInsert[i] = offerData
+	}
 
-		_, err := collection.InsertOne(context.TODO(), bson.M{
-			"name":     offer.Carrier.Name,
-			"service":  offer.Service,
-			"price":    offer.FinalPrice,
-			"deadline": offer.DeliveryTime.Days,
-		})
+	_, err = collection.InsertMany(context.TODO(), documentsToInsert)
 
-		if err != nil {
-			utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert offer: %s", err))
-			return
-		}
+	if err != nil {
+		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("Failed to insert offer: %s", err))
+		return
 	}
 
 	utils.SendOKResponse(w, transformedOffers)
@@ -124,7 +121,7 @@ func (q *QuoteHandler) GetQuoteMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	pipeline = append(pipeline, bson.D{{"$group", bson.D{
-		{"_id", "$service"},
+		{"_id", "$name"},
 		{"count", bson.D{{"$sum", 1}}},
 		{"total_price", bson.D{{"$sum", "$price"}}},
 		{"average_price", bson.D{{"$avg", "$price"}}},
