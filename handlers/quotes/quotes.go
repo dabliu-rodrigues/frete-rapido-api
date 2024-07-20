@@ -14,7 +14,19 @@ import (
 	"github.com/jsGolden/frete-rapido-api/utils"
 )
 
-func CreateQuote(w http.ResponseWriter, r *http.Request) {
+type QuoteHandler struct {
+	Mongo       *services.MongoService
+	FreteRapido *services.FreteRapidoService
+}
+
+func NewQuoteHandler(Mongo *services.MongoService, FreteRapido *services.FreteRapidoService) *QuoteHandler {
+	return &QuoteHandler{
+		Mongo,
+		FreteRapido,
+	}
+}
+
+func (q *QuoteHandler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 	var quoteRequest models.CreateQuoteRequest
 	err := render.DecodeJSON(r.Body, &quoteRequest)
 	if err != nil {
@@ -39,22 +51,19 @@ func CreateQuote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	freteRapidoService := services.NewFreteRapidoService("https://sp.freterapido.com/api/v3")
-
-	resp, err := freteRapidoService.Quote(transformedQuote)
+	resp, err := q.FreteRapido.Quote(transformedQuote)
 	if err != nil {
 		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("%s", err))
 		return
 	}
 
-	mongoService := services.NewMongoService("mongodb://127.0.0.1:27017", "frete-rapido")
-	db, err := mongoService.GetConnection()
+	db, err := q.Mongo.GetConnection()
 	if err != nil {
 		utils.SendGenericError(w, http.StatusInternalServerError, fmt.Sprintf("%s", err))
 		return
 	}
 
-	c := db.Collection("quotes")
+	collection := db.Collection("quotes")
 
 	var transformedOffers = models.CreateQuoteResponse{}
 
@@ -72,7 +81,7 @@ func CreateQuote(w http.ResponseWriter, r *http.Request) {
 		}
 		transformedOffers.Carrier = append(transformedOffers.Carrier, offerData)
 
-		_, err := c.InsertOne(context.TODO(), bson.M{
+		_, err := collection.InsertOne(context.TODO(), bson.M{
 			"name":     offer.Carrier.Name,
 			"nervice":  offer.Service,
 			"price":    offer.FinalPrice,

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-type freteRapidoService struct {
+type FreteRapidoService struct {
 	BaseURL    string
 	HttpClient http.Client
 }
@@ -92,16 +92,16 @@ type FreteRapidoQuoteSimulationResponse struct {
 	} `json:"dispatchers"`
 }
 
-func NewFreteRapidoService(url string) *freteRapidoService {
+func NewFreteRapidoService(url string) *FreteRapidoService {
 	var client = http.Client{}
 
-	return &freteRapidoService{
+	return &FreteRapidoService{
 		url,
 		client,
 	}
 }
 
-func (s *freteRapidoService) Quote(qr *FreteRapidoQuoteSimulationRequest) (*FreteRapidoQuoteSimulationResponse, error) {
+func (s *FreteRapidoService) Quote(qr *FreteRapidoQuoteSimulationRequest) (*FreteRapidoQuoteSimulationResponse, error) {
 	url := fmt.Sprintf("%s/quote/simulate", s.BaseURL)
 
 	jsonBody, err := json.Marshal(qr)

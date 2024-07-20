@@ -15,8 +15,14 @@ func main() {
 		log.Fatalf("Error while loading .env file: %s", err)
 	}
 
-	router := router.SetupRouter()
 	serverConfig := config.ServerConfig()
+
+	quoteMongoService, err := config.SetupDatabase()
+	if err != nil {
+		log.Fatalf("Error connecting to database: %s", err)
+	}
+
+	router := router.SetupRouter(quoteMongoService)
 
 	fmt.Printf("Server listening at: %s 🚀", serverConfig)
 	if err := http.ListenAndServe(serverConfig, router); err != nil && err != http.ErrServerClosed {
