@@ -12,16 +12,17 @@ import (
 
 	"github.com/jsGolden/frete-rapido-api/models"
 	"github.com/jsGolden/frete-rapido-api/services"
+	freterapido "github.com/jsGolden/frete-rapido-api/services/frete-rapido"
 	"github.com/jsGolden/frete-rapido-api/transformers"
 	"github.com/jsGolden/frete-rapido-api/utils"
 )
 
 type QuoteHandler struct {
 	Mongo       *services.MongoService
-	FreteRapido *services.FreteRapidoService
+	FreteRapido *freterapido.Service
 }
 
-func NewQuoteHandler(Mongo *services.MongoService, FreteRapido *services.FreteRapidoService) *QuoteHandler {
+func NewQuoteHandler(Mongo *services.MongoService, FreteRapido *freterapido.Service) *QuoteHandler {
 	return &QuoteHandler{
 		Mongo,
 		FreteRapido,

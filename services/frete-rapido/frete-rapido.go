@@ -1,4 +1,4 @@
-package services
+package freterapido
 
 import (
 	"bytes"
@@ -9,41 +9,48 @@ import (
 	"time"
 )
 
-type FreteRapidoService struct {
+type Service struct {
 	BaseURL    string
 	HttpClient http.Client
 }
 
-type FreteRapidoQuoteSimulationRequest struct {
-	Recipient struct {
-		Zipcode int    `json:"zipcode"`
-		Country string `json:"country"`
-		Type    int    `json:"type"`
-	} `json:"recipient"`
-
-	Shipper struct {
-		RegisteredNumber string `json:"registered_number"`
-		PlatformCode     string `json:"platform_code"`
-		Token            string `json:"token"`
-	} `json:"shipper"`
-	Dispatchers []struct {
-		RegisteredNumber string `json:"registered_number"`
-		Zipcode          int    `json:"zipcode"`
-		Volumes          []struct {
-			Category      string  `json:"category"`
-			Amount        int     `json:"amount"`
-			UnitaryWeight float64 `json:"unitary_weight"`
-			UnitaryPrice  float64 `json:"unitary_price"`
-			Sku           string  `json:"sku"`
-			Height        float64 `json:"height"`
-			Width         float64 `json:"width"`
-			Length        float64 `json:"length"`
-		} `json:"volumes"`
-	} `json:"dispatchers"`
+type QuoteSimulationRequest struct {
+	Recipient      Recipient `json:"recipient"`
+	Shipper        Shipper   `json:"shipper"`
+	Dispatchers    []Dispatcher
 	SimulationType []int `json:"simulation_type"`
 }
 
-type FreteRapidoQuoteSimulationResponse struct {
+type Recipient struct {
+	Zipcode int    `json:"zipcode"`
+	Country string `json:"country"`
+	Type    int    `json:"type"`
+}
+
+type Shipper struct {
+	RegisteredNumber string `json:"registered_number"`
+	PlatformCode     string `json:"platform_code"`
+	Token            string `json:"token"`
+}
+
+type Dispatcher struct {
+	RegisteredNumber string   `json:"registered_number"`
+	Zipcode          int      `json:"zipcode"`
+	Volumes          []Volume `json:"volumes"`
+}
+
+type Volume struct {
+	Category      string  `json:"category"`
+	Amount        int     `json:"amount"`
+	UnitaryWeight float64 `json:"unitary_weight"`
+	UnitaryPrice  float64 `json:"unitary_price"`
+	Sku           string  `json:"sku"`
+	Height        float64 `json:"height"`
+	Width         float64 `json:"width"`
+	Length        float64 `json:"length"`
+}
+
+type QuoteSimulationResponse struct {
 	Dispatchers []struct {
 		ID     string `json:"id"`
 		Offers []struct {
@@ -92,16 +99,16 @@ type FreteRapidoQuoteSimulationResponse struct {
 	} `json:"dispatchers"`
 }
 
-func NewFreteRapidoService(url string) *FreteRapidoService {
+func NewFreteRapidoService(url string) *Service {
 	var client = http.Client{}
 
-	return &FreteRapidoService{
+	return &Service{
 		url,
 		client,
 	}
 }
 
-func (s *FreteRapidoService) Quote(qr *FreteRapidoQuoteSimulationRequest) (*FreteRapidoQuoteSimulationResponse, error) {
+func (s *Service) Quote(qr *QuoteSimulationRequest) (*QuoteSimulationResponse, error) {
 	url := fmt.Sprintf("%s/quote/simulate", s.BaseURL)
 
 	jsonBody, err := json.Marshal(qr)
@@ -127,7 +134,7 @@ func (s *FreteRapidoService) Quote(qr *FreteRapidoQuoteSimulationRequest) (*Fret
 		return nil, err
 	}
 
-	var jsonResponse = FreteRapidoQuoteSimulationResponse{}
+	var jsonResponse = QuoteSimulationResponse{}
 	json.Unmarshal(bodyResponse, &jsonResponse)
 
 	return &jsonResponse, nil
