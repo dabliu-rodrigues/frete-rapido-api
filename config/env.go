@@ -5,6 +5,8 @@ import (
 )
 
 func SetupEnvFile() error {
+	viper.AutomaticEnv()
+
 	viper.SetConfigFile(".env")
 	viper.SetDefault("PORT", "8080")
 	viper.SetDefault("HOST", "0.0.0.0")
