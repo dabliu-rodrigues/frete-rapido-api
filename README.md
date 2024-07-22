@@ -72,7 +72,7 @@ Para conseguir executar o projeto sem nenhuma interferência, certifique-se de t
 
 ```
 
-3. Suba os containers para a integração do manuseamento de dados (MongoDB/Redis)
+3. Suba os containers (API e MongoDB) para a integração total dos serviços
 ```shell
   docker-compose up
 
