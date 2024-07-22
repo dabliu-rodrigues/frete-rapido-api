@@ -29,9 +29,9 @@ type Quote struct {
 }
 
 type MetricsResponse struct {
-	CheapestQuote      int `json:"cheapest_quote"`
-	MostExpensiveQuote int `json:"most_expensive_quote"`
-	Services           struct {
+	CheapestQuote      float64 `json:"cheapest_quote"`
+	MostExpensiveQuote float64 `json:"most_expensive_quote"`
+	Services           []struct {
 		AveragePrice float64 `json:"average_price"`
 		Carrier      string  `json:"carrier"`
 		Count        int     `json:"count"`

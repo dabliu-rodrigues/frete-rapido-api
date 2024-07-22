@@ -118,10 +118,15 @@ func (q *QuoteHandler) GetQuoteMetrics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	metrics := map[string]interface{}{
-		"cheapest_quote":       result[0]["cheapest_quote"],
-		"most_expensive_quote": result[0]["most_expensive_quote"],
-		"services":             result[0]["services"],
+	metrics := models.MetricsResponse{
+		CheapestQuote:      result.CheapestQuote,
+		MostExpensiveQuote: result.CheapestQuote,
+		Services: []struct {
+			AveragePrice float64 "json:\"average_price\""
+			Carrier      string  "json:\"carrier\""
+			Count        int     "json:\"count\""
+			TotalPrice   float64 "json:\"total_price\""
+		}(result.Services),
 	}
 
 	utils.SendOKResponse(w, metrics)

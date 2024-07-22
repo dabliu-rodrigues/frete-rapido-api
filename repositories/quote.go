@@ -14,6 +14,17 @@ type QuoteRepository struct {
 	Mongo          *services.MongoService
 }
 
+type MetricsResponse struct {
+	CheapestQuote      float64 `bson:"cheapest_quote"`
+	MostExpensiveQuote float64 `bson:"most_expensive_quote"`
+	Services           []struct {
+		AveragePrice float64 `bson:"average_price"`
+		Carrier      string  `bson:"carrier"`
+		Count        int     `bson:"count"`
+		TotalPrice   float64 `bson:"total_price"`
+	} `bson:"services"`
+}
+
 func NewQuoteRepository(collectionName string, m *services.MongoService) *QuoteRepository {
 	return &QuoteRepository{
 		collectionName,
@@ -49,7 +60,7 @@ func (qr *QuoteRepository) InsertManyQuotes(q []*models.Quote) (*mongo.InsertMan
 	return result, nil
 }
 
-func (qr *QuoteRepository) GetQuoteMetrics(limit uint64) ([]bson.M, error) {
+func (qr *QuoteRepository) GetQuoteMetrics(limit uint64) (*MetricsResponse, error) {
 	pipeline := mongo.Pipeline{
 		bson.D{
 			{"$sort", bson.D{{"price", -1}}},
@@ -95,10 +106,10 @@ func (qr *QuoteRepository) GetQuoteMetrics(limit uint64) ([]bson.M, error) {
 	}
 	defer cursor.Close(context.TODO())
 
-	var result []bson.M
+	var result []*MetricsResponse
 	if err = cursor.All(context.TODO(), &result); err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return result[0], nil
 }
