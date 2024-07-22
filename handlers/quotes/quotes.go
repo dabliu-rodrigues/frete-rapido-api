@@ -26,6 +26,16 @@ func NewQuoteHandler(qr *repositories.QuoteRepository, fr *freterapido.Service) 
 	}
 }
 
+// @Summary Create quote
+// @Description Uses frete-rapido API to simulate quote and save response at database
+// @Tags Quotes
+// @Accept json
+// @Produce json
+// @Param request body models.CreateQuoteRequest true "Request body"
+// @Success 200 {object} models.CreateQuoteResponse
+// @Failure 400 {object} utils.BadParamError
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /quote [post]
 func (q *QuoteHandler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 	var quoteRequest models.CreateQuoteRequest
 	err := render.DecodeJSON(r.Body, &quoteRequest)
@@ -78,6 +88,16 @@ func (q *QuoteHandler) CreateQuote(w http.ResponseWriter, r *http.Request) {
 	utils.SendOKResponse(w, transformedOffers)
 }
 
+// @Summary Get quote metrics
+// @Description Use stored quote to generate general metrics
+// @Tags Quotes
+// @Accept json
+// @Produce json
+// @Param        last_quotes    query     int  false  "limit carriers"
+// @Success 200 {object} models.MetricsResponse
+// @Failure 400 {object} utils.BadParamError
+// @Failure 500 {object} utils.ErrorResponse
+// @Router /metrics [get]
 func (q *QuoteHandler) GetQuoteMetrics(w http.ResponseWriter, r *http.Request) {
 	var limit uint64
 

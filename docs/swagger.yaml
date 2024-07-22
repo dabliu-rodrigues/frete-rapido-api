@@ -1,0 +1,176 @@
+definitions:
+  models.CreateQuoteRequest:
+    properties:
+      recipient:
+        properties:
+          address:
+            properties:
+              zipcode:
+                type: string
+            required:
+            - zipcode
+            type: object
+        type: object
+      volumes:
+        items:
+          properties:
+            amount:
+              minimum: 0
+              type: integer
+            category:
+              minimum: 0
+              type: integer
+            height:
+              minimum: 0
+              type: number
+            length:
+              minimum: 0
+              type: number
+            price:
+              minimum: 0
+              type: number
+            sku:
+              type: string
+            unitary_weight:
+              minimum: 0
+              type: number
+            width:
+              minimum: 0
+              type: number
+          required:
+          - amount
+          - category
+          - height
+          - length
+          - price
+          - sku
+          - unitary_weight
+          - width
+          type: object
+        type: array
+    required:
+    - volumes
+    type: object
+  models.CreateQuoteResponse:
+    properties:
+      carrier:
+        items:
+          $ref: '#/definitions/models.Quote'
+        type: array
+    type: object
+  models.MetricsResponse:
+    properties:
+      cheapest_quote:
+        type: integer
+      most_expensive_quote:
+        type: integer
+      services:
+        properties:
+          average_price:
+            type: number
+          carrier:
+            type: string
+          count:
+            type: integer
+          total_price:
+            type: number
+        type: object
+    type: object
+  models.Quote:
+    properties:
+      deadline:
+        type: integer
+      name:
+        type: string
+      price:
+        type: number
+      service:
+        type: string
+    type: object
+  utils.BadParamError:
+    properties:
+      errorCode:
+        type: integer
+      fields:
+        items:
+          $ref: '#/definitions/utils.ParamError'
+        type: array
+    type: object
+  utils.ErrorResponse:
+    properties:
+      errorCode:
+        type: integer
+      message:
+        type: string
+    type: object
+  utils.ParamError:
+    properties:
+      message:
+        type: string
+      param:
+        type: string
+      type:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /metrics:
+    get:
+      consumes:
+      - application/json
+      description: Use stored quote to generate general metrics
+      parameters:
+      - description: limit carriers
+        in: query
+        name: last_quotes
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MetricsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.BadParamError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Get quote metrics
+      tags:
+      - Quotes
+  /quote:
+    post:
+      consumes:
+      - application/json
+      description: Uses frete-rapido API to simulate quote and save response at database
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateQuoteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.CreateQuoteResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.BadParamError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.ErrorResponse'
+      summary: Create quote
+      tags:
+      - Quotes
+swagger: "2.0"

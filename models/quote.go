@@ -27,3 +27,14 @@ type Quote struct {
 	Deadline int     `json:"deadline"`
 	Price    float64 `json:"price"`
 }
+
+type MetricsResponse struct {
+	CheapestQuote      int `json:"cheapest_quote"`
+	MostExpensiveQuote int `json:"most_expensive_quote"`
+	Services           struct {
+		AveragePrice float64 `json:"average_price"`
+		Carrier      string  `json:"carrier"`
+		Count        int     `json:"count"`
+		TotalPrice   float64 `json:"total_price"`
+	} `json:"services"`
+}
