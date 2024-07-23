@@ -26,7 +26,7 @@ O objetivo desta aplicação é construir uma API HTTPs que utiliza a API Frete 
 Esse projeto foi desenvolvido utilizando as seguintes tecnologias:
 
 - [Golang](https://go.dev/) - Linguagem escolhida pela sua robustez no processamento de dados de forma concorrente.
-- [Go-chi](https://typeorm.io/) - Biblioteca super leve e performática para construção de servidores HTTP utilizando handlers nativos do Go!
+- [Go-chi](https://github.com/go-chi/chi) - Biblioteca super leve e performática para construção de servidores HTTP utilizando handlers nativos do Go!
 - [Docker](https://www.docker.com/) - Criação de imagens e conteiners para melhor orquestração e execução do aplicativo em especificos contextos.
 - [MongoDB](https://www.mongodb.com/) - Banco da dados não relacional para persistência dos dados.
 - [Swagger](https://swagger.io/) - Para construção da documentação da API.
