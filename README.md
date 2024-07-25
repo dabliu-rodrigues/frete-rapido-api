@@ -28,7 +28,7 @@ Esse projeto foi desenvolvido utilizando as seguintes tecnologias:
 - [Golang](https://go.dev/) - Linguagem escolhida pela sua robustez no processamento de dados de forma concorrente.
 - [Go-chi](https://github.com/go-chi/chi) - Biblioteca super leve e performática para construção de servidores HTTP utilizando handlers nativos do Go!
 - [Docker](https://www.docker.com/) - Criação de imagens e conteiners para melhor orquestração e execução do aplicativo em especificos contextos.
-- [MongoDB](https://www.mongodb.com/) - Banco da dados não relacional para persistência dos dados.
+- [MongoDB](https://www.mongodb.com/) - Banco de dados não relacional para persistência dos dados.
 - [Swagger](https://swagger.io/) - Para construção da documentação da API.
 
 ## 👨‍🏫 Fundamentos e estratégias abordadas
